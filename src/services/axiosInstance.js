@@ -6,7 +6,7 @@ import {
 } from "../utils/tokenManager";
 
 const DEVICE_ID_KEY = "deviceId";
-const CLIENT_ID = "162ebb94-cc91-459e-8108-ca16be52e940";
+const CLIENT_ID = "36d6e057-0b08-4d8b-a801-676fbc8d0dd9";
 const REFRESH_TOKEN_KEY = "refreshToken";
 
 let refreshPromise = null;
