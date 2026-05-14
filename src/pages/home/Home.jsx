@@ -1,8 +1,11 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { MessageCircle } from "lucide-react";
 import toast from "react-hot-toast";
 import Navbar from "../../components/layout/Navbar";
 import { getProperties } from "../../services/propertyService";
+import { getChatUnreadCount } from "../../services/chatService";
+import useAuth from "../../hooks/useAuth";
 
 const PROPERTY_TYPES = [
   { value: "", label: "All Types" },
@@ -20,10 +23,12 @@ const PAGE_SIZE = 10;
 
 function Home() {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [properties, setProperties] = useState([]);
   const [loading, setLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
 
   const [filters, setFilters] = useState({
     SearchTerm: "",
@@ -65,6 +70,20 @@ function Home() {
     fetchProperties(1);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Fetch total unread chat messages (only when logged in)
+  useEffect(() => {
+    if (!user) return;
+    const fetchChatCount = async () => {
+      try {
+        const count = await getChatUnreadCount();
+        setChatUnreadCount(Number(count) || 0);
+      } catch {
+        // silently fail — badge just won't show
+      }
+    };
+    fetchChatCount();
+  }, [user]);
 
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
@@ -110,47 +129,66 @@ function Home() {
           </p>
 
           {/* Hero Search Bar */}
-          <div className="flex bg-[#0d0d0d]/80 backdrop-blur-md border border-[#c1aa77]/25 w-full max-w-2xl mx-auto">
-            <input
-              type="text"
-              name="SearchTerm"
-              value={filters.SearchTerm}
-              onChange={handleFilterChange}
-              placeholder="Search by city, title or keyword..."
-              className="flex-1 bg-transparent px-7 py-5 text-[var(--cream)] text-sm placeholder-[#f5f0e8]/30 outline-none"
-            />
-            <div className="w-px bg-[#c1aa77]/20 my-3" />
-            <select
-              name="Type"
-              value={filters.Type}
-              onChange={handleFilterChange}
-              className="bg-transparent px-5 py-5 text-[#f5f0e8]/50 text-sm outline-none cursor-pointer min-w-[120px]"
-            >
-              {PROPERTY_TYPES.map((t) => (
-                <option key={t.value} value={t.value} className="bg-[#1a1a1a]">
-                  {t.label}
-                </option>
-              ))}
-            </select>
-            <div className="w-px bg-[#c1aa77]/20 my-3" />
-            <select
-              name="Intent"
-              value={filters.Intent}
-              onChange={handleFilterChange}
-              className="bg-transparent px-5 py-5 text-[#f5f0e8]/50 text-sm outline-none cursor-pointer min-w-[120px]"
-            >
-              {LISTING_INTENTS.map((i) => (
-                <option key={i.value} value={i.value} className="bg-[#1a1a1a]">
-                  {i.label}
-                </option>
-              ))}
-            </select>
-            <button
-              onClick={handleSearch}
-              className="bg-[var(--gold)] hover:bg-[var(--gold-light)] px-8 text-[var(--dark)] text-xs tracking-[3px] uppercase font-medium transition-all duration-300"
-            >
-              Search
-            </button>
+          <div className="flex flex-col gap-4 w-full max-w-2xl mx-auto">
+            <div className="flex bg-[#0d0d0d]/80 backdrop-blur-md border border-[#c1aa77]/25 w-full overflow-hidden rounded-full">
+              <input
+                type="text"
+                name="SearchTerm"
+                value={filters.SearchTerm}
+                onChange={handleFilterChange}
+                placeholder="Search by city, title or keyword..."
+                className="flex-1 bg-transparent px-7 py-5 text-[var(--cream)] text-sm placeholder-[#f5f0e8]/30 outline-none"
+              />
+              <div className="w-px bg-[#c1aa77]/20 my-3" />
+              <select
+                name="Type"
+                value={filters.Type}
+                onChange={handleFilterChange}
+                className="bg-transparent px-5 py-5 text-[#f5f0e8]/50 text-sm outline-none cursor-pointer min-w-[120px]"
+              >
+                {PROPERTY_TYPES.map((t) => (
+                  <option key={t.value} value={t.value} className="bg-[#1a1a1a]">
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+              <div className="w-px bg-[#c1aa77]/20 my-3" />
+              <select
+                name="Intent"
+                value={filters.Intent}
+                onChange={handleFilterChange}
+                className="bg-transparent px-5 py-5 text-[#f5f0e8]/50 text-sm outline-none cursor-pointer min-w-[120px]"
+              >
+                {LISTING_INTENTS.map((i) => (
+                  <option key={i.value} value={i.value} className="bg-[#1a1a1a]">
+                    {i.label}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={handleSearch}
+                className="bg-[var(--gold)] hover:bg-[var(--gold-light)] px-8 text-[var(--dark)] text-xs tracking-[3px] uppercase font-medium transition-all duration-300"
+              >
+                Search
+              </button>
+            </div>
+
+            {user && chatUnreadCount > 0 && (
+              <button
+                onClick={() => navigate("/trips")}
+                className="self-end flex items-center gap-3 bg-[#111] border border-[#c1aa77]/30 px-5 py-3 rounded-full text-[var(--cream)] hover:border-[var(--gold)] transition-all duration-300"
+              >
+                <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[var(--gold)] text-[#0d0d0d]">
+                  <MessageCircle size={18} />
+                  <span className="absolute -top-2 -right-2 flex h-5 min-w-[20px] items-center justify-center rounded-full bg-red-500 text-[10px] font-bold text-white px-1">
+                    {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+                  </span>
+                </div>
+                <span className="text-[11px] tracking-[2px] uppercase font-medium">
+                  {chatUnreadCount === 1 ? "1 new message" : `${chatUnreadCount} new messages`}
+                </span>
+              </button>
+            )}
           </div>
         </div>
 
@@ -373,6 +411,51 @@ function Home() {
           )}
         </div>
       </div>
+      {/* Floating Chat Button — always visible to logged-in users */}
+      {user && (
+        <div className="fixed bottom-8 right-8 z-50 group">
+          <button
+            onClick={() => navigate("/trips")}
+            title={chatUnreadCount > 0 ? `You have ${chatUnreadCount} unread message${chatUnreadCount === 1 ? '' : 's'}` : "Go to Messages"}
+            className="flex items-center justify-center w-14 h-14 bg-[var(--dark-2)] border border-[var(--gold)]/40 text-[var(--cream)] shadow-2xl hover:border-[var(--gold)] hover:bg-[#1f1f1f] transition-all duration-300 rounded-full"
+          >
+            <div className="relative">
+              <MessageCircle
+                size={24}
+                className="text-[var(--gold)] group-hover:scale-110 transition-transform duration-300"
+              />
+              {chatUnreadCount > 0 && (
+                <span
+                  className="absolute -top-1 -right-1 flex items-center justify-center rounded-full bg-red-500 text-white font-bold"
+                  style={{ minWidth: 18, height: 18, fontSize: 10, padding: "0 5px" }}
+                >
+                  {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+                </span>
+              )}
+            </div>
+          </button>
+
+          {/* Hover Popup */}
+          <div className="absolute bottom-full right-0 mb-3 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 pointer-events-none">
+            <div className="bg-[var(--dark-2)] border border-[var(--gold)]/30 rounded-lg px-4 py-3 shadow-xl min-w-[200px] text-center">
+              <p className="text-[10px] tracking-[3px] uppercase text-[var(--gold)] mb-2">
+                Unread Messages
+              </p>
+              {chatUnreadCount > 0 ? (
+                <p className="text-[var(--cream)] text-sm">
+                  You have {chatUnreadCount} unread message{chatUnreadCount === 1 ? '' : 's'}
+                </p>
+              ) : (
+                <p className="text-[var(--cream)]/50 text-sm italic">
+                  Empty
+                </p>
+              )}
+              {/* Arrow pointing down */}
+              <div className="absolute top-full right-4 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-[var(--gold)]/30"></div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

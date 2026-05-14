@@ -5,7 +5,14 @@ import axiosInstance from "./axiosInstance";
  */
 export const getChatUnreadCount = async () => {
   const res = await axiosInstance.get("/api/v1/Chat/unread-count");
-  return res.data;
+  const payload = res.data;
+
+  if (payload && typeof payload === "object") {
+    if (typeof payload.data !== "undefined") return payload.data;
+    if (typeof payload.count !== "undefined") return payload.count;
+  }
+
+  return payload;
 };
 
 /**

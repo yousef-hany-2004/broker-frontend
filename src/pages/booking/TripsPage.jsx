@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin,
@@ -10,42 +10,27 @@ import {
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { getMyTrips, cancelBooking } from "../../services/bookingService";
+import { getConversationUnreadCount } from "../../services/chatService";
 import Navbar from "../../components/layout/Navbar";
+import ChatPanel from "../chat/ChatPanel";
 
-// ─── Status config ───────────────────────────────────────────────
+// ─── Status config ────────────────────────────────────────────────
 const STATUS_CONFIG = {
-  Pending: {
-    label: "Pending",
-    color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30",
-  },
-  Confirmed: {
-    label: "Confirmed",
-    color: "text-blue-400 bg-blue-400/10 border-blue-400/30",
-  },
-  Active: {
-    label: "Active",
-    color: "text-green-400 bg-green-400/10 border-green-400/30",
-  },
-  Completed: {
-    label: "Completed",
-    color: "text-gray-400 bg-gray-400/10 border-gray-400/30",
-  },
-  Cancelled: {
-    label: "Cancelled",
-    color: "text-red-400 bg-red-400/10 border-red-400/30",
-  },
+  Pending:   { label: "Pending",   color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30" },
+  Confirmed: { label: "Confirmed", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
+  Active:    { label: "Active",    color: "text-green-400 bg-green-400/10 border-green-400/30" },
+  Completed: { label: "Completed", color: "text-gray-400 bg-gray-400/10 border-gray-400/30" },
+  Cancelled: { label: "Cancelled", color: "text-red-400 bg-red-400/10 border-red-400/30" },
 };
 
-// ─── Helper ──────────────────────────────────────────────────────
-const formatDate = (dateStr) => {
-  return new Date(dateStr).toLocaleDateString("en-GB", {
+const formatDate = (dateStr) =>
+  new Date(dateStr).toLocaleDateString("en-GB", {
     day: "2-digit",
     month: "short",
     year: "numeric",
   });
-};
 
-// Cancel
+// ─── Cancel Modal ─────────────────────────────────────────────────
 const CancelModal = ({ trip, onClose, onCancelled }) => {
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -71,20 +56,13 @@ const CancelModal = ({ trip, onClose, onCancelled }) => {
   return (
     <div className="fixed inset-0 z-50 bg-[#0d0d0d]/80 flex items-center justify-center px-6">
       <div className="bg-[var(--dark-2)] border border-white/10 rounded-2xl p-8 max-w-md w-full">
-        <p className="text-xs tracking-[4px] uppercase text-red-400 mb-3">
-          Cancel Booking
-        </p>
-        <h2
-          className="text-3xl font-light text-white mb-2"
-          style={{ fontFamily: "Cormorant Garamond, serif" }}
-        >
+        <p className="text-xs tracking-[4px] uppercase text-red-400 mb-3">Cancel Booking</p>
+        <h2 className="text-3xl font-light text-white mb-2" style={{ fontFamily: "Cormorant Garamond, serif" }}>
           {trip.propertyTitle}
         </h2>
         <p className="text-white/40 text-sm mb-6">
-          Are you sure you want to cancel this booking? This action cannot be
-          undone.
+          Are you sure you want to cancel this booking? This action cannot be undone.
         </p>
-
         <div className="mb-6">
           <label className="block text-[10px] tracking-[3px] uppercase text-white/30 mb-2">
             Reason <span className="text-white/20">(optional)</span>
@@ -97,7 +75,6 @@ const CancelModal = ({ trip, onClose, onCancelled }) => {
             className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white text-sm placeholder-white/20 outline-none focus:border-red-400/40 transition-colors resize-none"
           />
         </div>
-
         <div className="flex gap-3">
           <button
             onClick={onClose}
@@ -110,11 +87,7 @@ const CancelModal = ({ trip, onClose, onCancelled }) => {
             disabled={loading}
             className="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-400 text-white text-xs tracking-[3px] uppercase transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
           >
-            {loading ? (
-              <Loader2 size={14} className="animate-spin" />
-            ) : (
-              "Yes, Cancel"
-            )}
+            {loading ? <Loader2 size={14} className="animate-spin" /> : "Yes, Cancel"}
           </button>
         </div>
       </div>
@@ -122,7 +95,7 @@ const CancelModal = ({ trip, onClose, onCancelled }) => {
   );
 };
 
-// ─── Trip Card ───────────────────────────────────────────────────
+// ─── Trip Card ────────────────────────────────────────────────────
 const TripCard = ({ trip, onPayOnline, onCancel, onMessage, unreadCount }) => {
   const status = STATUS_CONFIG[trip.status] ?? STATUS_CONFIG.Pending;
 
@@ -131,11 +104,7 @@ const TripCard = ({ trip, onPayOnline, onCancel, onMessage, unreadCount }) => {
       {/* Property Image */}
       <div className="relative h-48 overflow-hidden">
         {trip.primaryImageUrl ? (
-          <img
-            src={trip.primaryImageUrl}
-            alt={trip.propertyTitle}
-            className="w-full h-full object-cover"
-          />
+          <img src={trip.primaryImageUrl} alt={trip.propertyTitle} className="w-full h-full object-cover" />
         ) : (
           <div className="w-full h-full bg-[var(--dark-3)] flex items-center justify-center">
             <span className="text-white/20 text-sm">No Image</span>
@@ -145,7 +114,7 @@ const TripCard = ({ trip, onPayOnline, onCancel, onMessage, unreadCount }) => {
 
       {/* Card Body */}
       <div className="p-5 space-y-4">
-        {/* Title + City */}
+        {/* Title + Status */}
         <div>
           <div className="flex items-start justify-between gap-2">
             <h3
@@ -154,9 +123,7 @@ const TripCard = ({ trip, onPayOnline, onCancel, onMessage, unreadCount }) => {
             >
               {trip.propertyTitle}
             </h3>
-            <div
-              className={`shrink-0 px-3 py-1 rounded-full border text-xs font-medium ${status.color}`}
-            >
+            <div className={`shrink-0 px-3 py-1 rounded-full border text-xs font-medium ${status.color}`}>
               {status.label}
             </div>
           </div>
@@ -198,18 +165,19 @@ const TripCard = ({ trip, onPayOnline, onCancel, onMessage, unreadCount }) => {
             Pay Online
           </button>
 
+          {/* Message button with unread badge */}
           <button
-            onClick={() => trip.actions.canMessageLandlord && onMessage(trip)}
-            disabled={!trip.actions.canMessageLandlord}
+            onClick={() => trip.status !== "Cancelled" && onMessage(trip)}
+            disabled={trip.status === "Cancelled"}
             className={`relative flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-              trip.actions.canMessageLandlord
-                ? "bg-white/5 hover:bg-white/10 text-white/70"
-                : "bg-white/5 text-white/20 cursor-not-allowed"
+              trip.status === "Cancelled"
+                ? "bg-white/5 text-white/20 cursor-not-allowed"
+                : "bg-white/5 hover:bg-white/10 text-white/70"
             }`}
           >
             <MessageCircle size={13} />
             Message
-            {trip.actions.canMessageLandlord && unreadCount > 0 && (
+            {trip.actions?.canMessageLandlord && unreadCount > 0 && (
               <span
                 className="absolute -top-1.5 -right-1.5 flex items-center justify-center rounded-full text-white font-bold"
                 style={{
@@ -243,7 +211,7 @@ const TripCard = ({ trip, onPayOnline, onCancel, onMessage, unreadCount }) => {
   );
 };
 
-// ─── Skeleton Card ───────────────────────────────────────────────
+// ─── Skeleton Card ────────────────────────────────────────────────
 const SkeletonCard = () => (
   <div className="bg-[var(--dark-2)] border border-white/5 rounded-2xl overflow-hidden animate-pulse">
     <div className="h-48 bg-white/5" />
@@ -255,7 +223,7 @@ const SkeletonCard = () => (
   </div>
 );
 
-// ─── Main Component ──────────────────────────────────────────────
+// ─── Main Component ───────────────────────────────────────────────
 export default function TripsPage() {
   const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
@@ -264,9 +232,31 @@ export default function TripsPage() {
   const [totalPages, setTotalPages] = useState(1);
   const [totalCount, setTotalCount] = useState(0);
   const [cancellingTrip, setCancellingTrip] = useState(null);
+  const [chattingTrip, setChattingTrip] = useState(null);
+
+  // unreadCounts: { [bookingId]: number }
+  const [unreadCounts, setUnreadCounts] = useState({});
+
   const PAGE_SIZE = 9;
 
-  const fetchTrips = async (page) => {
+  const fetchUnreadCounts = useCallback(async (messageableTrips) => {
+    const counts = {};
+    await Promise.allSettled(
+      messageableTrips.map(async (trip) => {
+        try {
+          const res = await getConversationUnreadCount(trip.bookingId);
+          if (res.succeeded) {
+            counts[trip.bookingId] = res.data ?? 0;
+          }
+        } catch {
+          counts[trip.bookingId] = 0;
+        }
+      })
+    );
+    setUnreadCounts((prev) => ({ ...prev, ...counts }));
+  }, []);
+
+  const fetchTrips = useCallback(async (page) => {
     setLoading(true);
     try {
       const res = await getMyTrips({ PageNumber: page, PageSize: PAGE_SIZE });
@@ -276,6 +266,10 @@ export default function TripsPage() {
         setTrips(fetchedTrips);
         setTotalPages(result.totalPages);
         setTotalCount(result.totalCount);
+
+        // Fetch unread counts for trips that allow messaging
+        const messageable = fetchedTrips.filter((t) => t.actions?.canMessageLandlord);
+        fetchUnreadCounts(messageable);
       } else {
         toast.error(result.message || "Failed to load trips");
       }
@@ -284,11 +278,11 @@ export default function TripsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [PAGE_SIZE, fetchUnreadCounts]);
 
   useEffect(() => {
     fetchTrips(currentPage);
-  }, [currentPage]);
+  }, [currentPage, fetchTrips]);
 
   const handlePageChange = (page) => {
     setCurrentPage(page);
@@ -310,16 +304,20 @@ export default function TripsPage() {
           ? {
               ...t,
               status: "Cancelled",
-              actions: {
-                ...t.actions,
-                canCancel: false,
-                canPayOnline: false,
-                canMessageLandlord: false,
-              },
+              actions: { ...t.actions, canCancel: false, canPayOnline: false, canMessageLandlord: false },
             }
-          : t,
-      ),
+          : t
+      )
     );
+  };
+
+  const handleMessage = (trip) => {
+    setChattingTrip(trip);
+  };
+
+  // Called when ChatPanel marks messages as read
+  const handleUnreadCleared = (bookingId) => {
+    setUnreadCounts((prev) => ({ ...prev, [bookingId]: 0 }));
   };
 
   return (
@@ -341,10 +339,7 @@ export default function TripsPage() {
             />
             <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-transparent" />
             <div className="absolute inset-0 flex flex-col justify-center px-10">
-              <h1
-                className="text-5xl font-semibold text-white"
-                style={{ fontFamily: "Cormorant Garamond, serif" }}
-              >
+              <h1 className="text-5xl font-semibold text-white" style={{ fontFamily: "Cormorant Garamond, serif" }}>
                 My Trips
               </h1>
               {!loading && (
@@ -366,9 +361,7 @@ export default function TripsPage() {
             <div className="flex flex-col items-center justify-center py-32 text-center">
               <Calendar size={48} className="text-white/10 mb-4" />
               <p className="text-white/40 text-lg">No trips yet</p>
-              <p className="text-white/25 text-sm mt-1">
-                Start exploring properties
-              </p>
+              <p className="text-white/25 text-sm mt-1">Start exploring properties</p>
               <button
                 onClick={() => navigate("/")}
                 className="mt-6 px-6 py-2.5 rounded-full border border-[var(--gold)]/40 text-[var(--gold)] text-sm hover:bg-[var(--gold)]/10 transition-colors"
@@ -384,6 +377,8 @@ export default function TripsPage() {
                   trip={trip}
                   onPayOnline={handlePayOnline}
                   onCancel={handleCancel}
+                  onMessage={handleMessage}
+                  unreadCount={unreadCounts[trip.bookingId] ?? 0}
                 />
               ))}
             </div>
@@ -399,21 +394,19 @@ export default function TripsPage() {
               >
                 Previous
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(
-                (page) => (
-                  <button
-                    key={page}
-                    onClick={() => handlePageChange(page)}
-                    className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
-                      page === currentPage
-                        ? "bg-[var(--gold)] text-[var(--dark)] font-semibold"
-                        : "border border-white/10 text-white/50 hover:border-[var(--gold)]/40 hover:text-[var(--gold)]"
-                    }`}
-                  >
-                    {page}
-                  </button>
-                ),
-              )}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                <button
+                  key={page}
+                  onClick={() => handlePageChange(page)}
+                  className={`w-9 h-9 rounded-lg text-sm font-medium transition-colors ${
+                    page === currentPage
+                      ? "bg-[var(--gold)] text-[var(--dark)] font-semibold"
+                      : "border border-white/10 text-white/50 hover:border-[var(--gold)]/40 hover:text-[var(--gold)]"
+                  }`}
+                >
+                  {page}
+                </button>
+              ))}
               <button
                 onClick={() => handlePageChange(currentPage + 1)}
                 disabled={currentPage === totalPages}
@@ -425,7 +418,7 @@ export default function TripsPage() {
           )}
         </div>
 
-        {/* Cancel Button */}
+        {/* Cancel Modal */}
         {cancellingTrip && (
           <CancelModal
             trip={cancellingTrip}
@@ -434,6 +427,15 @@ export default function TripsPage() {
           />
         )}
       </div>
+
+      {/* Chat Panel — slides in from right */}
+      {chattingTrip && (
+        <ChatPanel
+          trip={chattingTrip}
+          onClose={() => setChattingTrip(null)}
+          onUnreadCleared={handleUnreadCleared}
+        />
+      )}
     </div>
   );
 }

@@ -11,6 +11,7 @@ import {
   markAllAsRead,
   markAsRead,
 } from "../../services/notificationService";
+import { getChatUnreadCount } from "../../services/chatService";
 import {
   upgradeToLandlord,
   getKycStatus,
@@ -34,6 +35,7 @@ const KYC_STATUS = {
 function Navbar() {
   const [scrolled, setScrolled] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [chatUnreadCount, setChatUnreadCount] = useState(0);
   const [showDropdown, setShowDropdown] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
@@ -69,6 +71,20 @@ function Navbar() {
       }
     };
     fetchCount();
+  }, [user]);
+
+  // Fetch chat unread count on mount
+  useEffect(() => {
+    if (!user) return;
+    const fetchChatCount = async () => {
+      try {
+        const result = await getChatUnreadCount();
+        setChatUnreadCount(result);
+      } catch {
+        // silently fail
+      }
+    };
+    fetchChatCount();
   }, [user]);
 
   // Fetch KYC status on mount — only for non-landlord logged-in users
@@ -288,6 +304,21 @@ function Navbar() {
         >
           <Heart size={24} />
         </Link>
+
+        {/* Messages — only show when logged in */}
+        {user && (
+          <Link
+            to="/trips" // Assuming chat is in trips page
+            className="relative flex items-center text-[#f5f0e8]/50 hover:text-[var(--gold)] transition-colors duration-300"
+          >
+            <MessageCircle size={24} />
+            {(chatUnreadCount > 0 || chatUnreadCount === 0) && (
+              <span className="absolute -top-1.5 -right-1.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[9px] font-bold flex items-center justify-center rounded-full">
+                {chatUnreadCount > 99 ? "99+" : chatUnreadCount}
+              </span>
+            )}
+          </Link>
+        )}
 
         {/* Bell — only show when logged in */}
         {user && (

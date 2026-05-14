@@ -11,6 +11,8 @@ const registerHandlers = () => {
   handlers.forEach((callback) => {
     connection.on("ReceiveNotification", callback);
   });
+  registerTypingHandlers();
+  registerMessageHandlers();
 };
 
 export const startNotificationConnection = async () => {
@@ -91,6 +93,70 @@ export const offNotificationReceived = (callback) => {
     connection?.off("ReceiveNotification");
   }
 };
+
+// Chat typing indicators
+const typingHandlers = new Set();
+
+export const onTypingIndicator = (callback) => {
+  typingHandlers.add(callback);
+  if (connection && connection.state === signalR.HubConnectionState.Connected) {
+    connection.on("ReceiveTypingIndicator", callback);
+  }
+};
+
+export const offTypingIndicator = (callback) => {
+  if (callback) {
+    typingHandlers.delete(callback);
+    connection?.off("ReceiveTypingIndicator", callback);
+  } else {
+    typingHandlers.clear();
+    connection?.off("ReceiveTypingIndicator");
+  }
+};
+
+export const sendTypingIndicator = async (bookingId, isTyping) => {
+  if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
+    return;
+  }
+  try {
+    await connection.invoke("SendTypingIndicator", bookingId, isTyping);
+  } catch (err) {
+    console.error("Failed to send typing indicator:", err);
+  }
+};
+
+// Chat message listeners
+const messageHandlers = new Set();
+
+export const onNewMessage = (callback) => {
+  messageHandlers.add(callback);
+  if (connection && connection.state === signalR.HubConnectionState.Connected) {
+    connection.on("ReceiveMessage", callback);
+  }
+};
+
+export const offNewMessage = (callback) => {
+  if (callback) {
+    messageHandlers.delete(callback);
+    connection?.off("ReceiveMessage", callback);
+  } else {
+    messageHandlers.clear();
+    connection?.off("ReceiveMessage");
+  }
+};
+
+const registerMessageHandlers = () => {
+  messageHandlers.forEach((callback) => {
+    connection.on("ReceiveMessage", callback);
+  });
+};
+
+const registerTypingHandlers = () => {
+  typingHandlers.forEach((callback) => {
+    connection.on("ReceiveTypingIndicator", callback);
+  });
+};
+
 
 export const stopNotificationConnection = async () => {
   if (!connection) return;
