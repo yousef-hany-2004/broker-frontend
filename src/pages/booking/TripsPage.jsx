@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+﻿import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   MapPin,
@@ -14,7 +14,7 @@ import { getConversationUnreadCount } from "../../services/chatService";
 import Navbar from "../../components/layout/Navbar";
 import ChatPanel from "../chat/ChatPanel";
 
-// ─── Status config ────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Status config ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const STATUS_CONFIG = {
   Pending:   { label: "Pending",   color: "text-yellow-400 bg-yellow-400/10 border-yellow-400/30" },
   Confirmed: { label: "Confirmed", color: "text-blue-400 bg-blue-400/10 border-blue-400/30" },
@@ -30,7 +30,7 @@ const formatDate = (dateStr) =>
     year: "numeric",
   });
 
-// ─── Cancel Modal ─────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Cancel Modal ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const CancelModal = ({ trip, onClose, onCancelled }) => {
   const [reason, setReason] = useState("");
   const [loading, setLoading] = useState(false);
@@ -95,7 +95,7 @@ const CancelModal = ({ trip, onClose, onCancelled }) => {
   );
 };
 
-// ─── Trip Card ────────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Trip Card ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const TripCard = ({ trip, onPayOnline, onCancel, onMessage, unreadCount }) => {
   const status = STATUS_CONFIG[trip.status] ?? STATUS_CONFIG.Pending;
 
@@ -137,7 +137,7 @@ const TripCard = ({ trip, onPayOnline, onCancel, onMessage, unreadCount }) => {
         <div className="flex items-center gap-2 text-white/60 text-sm">
           <Calendar size={14} className="text-[var(--gold)] shrink-0" />
           <span>{formatDate(trip.checkInDate)}</span>
-          <span className="text-white/30">→</span>
+          <span className="text-white/30">ΓåÆ</span>
           <span>{formatDate(trip.checkOutDate)}</span>
         </div>
 
@@ -211,7 +211,7 @@ const TripCard = ({ trip, onPayOnline, onCancel, onMessage, unreadCount }) => {
   );
 };
 
-// ─── Skeleton Card ────────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Skeleton Card ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 const SkeletonCard = () => (
   <div className="bg-[var(--dark-2)] border border-white/5 rounded-2xl overflow-hidden animate-pulse">
     <div className="h-48 bg-white/5" />
@@ -223,7 +223,7 @@ const SkeletonCard = () => (
   </div>
 );
 
-// ─── Main Component ───────────────────────────────────────────────
+// ΓöÇΓöÇΓöÇ Main Component ΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇΓöÇ
 export default function TripsPage() {
   const navigate = useNavigate();
   const [trips, setTrips] = useState([]);
@@ -428,7 +428,7 @@ export default function TripsPage() {
         )}
       </div>
 
-      {/* Chat Panel — slides in from right */}
+      {/* Chat Panel ΓÇö slides in from right */}
       {chattingTrip && (
         <ChatPanel
           trip={chattingTrip}

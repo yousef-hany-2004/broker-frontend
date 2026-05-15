@@ -157,7 +157,6 @@ const registerTypingHandlers = () => {
   });
 };
 
-
 export const stopNotificationConnection = async () => {
   if (!connection) return;
   handlers.clear();

@@ -190,6 +190,8 @@ function Home() {
               </button>
             )}
           </div>
+>>>>>>> 5a2c8f71fbc0252699ff2a50200378cbb6d6a473
+          </div>
         </div>
 
         {/* Scroll Indicator */}
@@ -411,6 +413,7 @@ function Home() {
           )}
         </div>
       </div>
+<<<<<<< HEAD
       {/* Floating Chat Button — always visible to logged-in users */}
       {user && (
         <div className="fixed bottom-8 right-8 z-50 group">
@@ -456,6 +459,8 @@ function Home() {
           </div>
         </div>
       )}
+=======
+>>>>>>> 5a2c8f71fbc0252699ff2a50200378cbb6d6a473
     </div>
   );
 }
