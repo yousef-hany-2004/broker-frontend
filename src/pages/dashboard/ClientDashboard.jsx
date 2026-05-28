@@ -73,7 +73,7 @@ export default function ClientDashboard() {
               icon={Briefcase}
               title="My Trips"
               description="View and manage your bookings"
-              onClick={() => navigate("/trips")}
+              onClick={() => navigate(user?.roles?.includes("Landlord") ? "/host/reservations" : "/trips")}
             />
             <HubCard
               icon={CreditCard}

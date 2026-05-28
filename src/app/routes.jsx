@@ -24,6 +24,7 @@ import BookingSuccessPage from "../pages/booking/BookingSuccessPage";
 import NotificationsPage from "../pages/notifications/NotificationPage";
 import KycResultPage from "../pages/kyc/KycResultPage";
 import HostListings from "../pages/landlord/HostListings";
+import HostReservations from "../pages/chat/host/HostReservations";
 import TripsPage from "../pages/booking/TripsPage";
 
 function AppRoutes() {
@@ -141,6 +142,14 @@ function AppRoutes() {
         element={
           <ProtectedRoute requiredRole="Landlord">
             <HostListings />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/host/reservations"
+        element={
+          <ProtectedRoute requiredRole="Landlord">
+            <HostReservations />
           </ProtectedRoute>
         }
       />

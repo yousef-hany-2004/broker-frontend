@@ -6,6 +6,11 @@ import Navbar from "../../components/layout/Navbar";
 import { getProperties } from "../../services/propertyService";
 import { getChatUnreadCount } from "../../services/chatService";
 import useAuth from "../../hooks/useAuth";
+import {
+  startNotificationConnection,
+  onNotificationReceived,
+  offNotificationReceived,
+} from "../../services/signalRNotificationService";
 
 const PROPERTY_TYPES = [
   { value: "", label: "All Types" },
@@ -72,19 +77,25 @@ function Home() {
   }, []);
 
   // Fetch total unread chat messages (only when logged in)
-  useEffect(() => {
-    if (!user) return;
-    const fetchChatCount = async () => {
-      try {
-        const count = await getChatUnreadCount();
-        setChatUnreadCount(Number(count) || 0);
-      } catch {
-        // silently fail — badge just won't show
+useEffect(() => {
+  if (!user) return;
+  const fetchChatCount = async () => {
+    try {
+      const count = await getChatUnreadCount();
+      // بيرجع رقم مباشرة أو object
+      if (typeof count === "number") {
+        setChatUnreadCount(count);
+      } else if (count?.succeeded) {
+        setChatUnreadCount(count.data ?? 0);
+      } else if (count?.count !== undefined) {
+        setChatUnreadCount(count.count);
       }
-    };
-    fetchChatCount();
-  }, [user]);
-
+    } catch {
+      // silently fail
+    }
+  };
+  fetchChatCount();
+}, [user]);
   const handleFilterChange = (e) => {
     const { name, value } = e.target;
     setFilters((prev) => ({ ...prev, [name]: value }));
@@ -175,7 +186,8 @@ function Home() {
 
             {user && chatUnreadCount > 0 && (
               <button
-                onClick={() => navigate("/trips")}
+               onClick={() => {setChatUnreadCount(0); navigate(user?.roles?.includes("Landlord") ? "/host/reservations" : "/trips");
+               }}
                 className="self-end flex items-center gap-3 bg-[#111] border border-[#c1aa77]/30 px-5 py-3 rounded-full text-[var(--cream)] hover:border-[var(--gold)] transition-all duration-300"
               >
                 <div className="relative flex h-9 w-9 items-center justify-center rounded-full bg-[var(--gold)] text-[#0d0d0d]">
@@ -189,8 +201,6 @@ function Home() {
                 </span>
               </button>
             )}
-          </div>
->>>>>>> 5a2c8f71fbc0252699ff2a50200378cbb6d6a473
           </div>
         </div>
 
@@ -413,12 +423,12 @@ function Home() {
           )}
         </div>
       </div>
-<<<<<<< HEAD
       {/* Floating Chat Button — always visible to logged-in users */}
       {user && (
         <div className="fixed bottom-8 right-8 z-50 group">
           <button
-            onClick={() => navigate("/trips")}
+           onClick={() => {setChatUnreadCount(0); navigate(user?.roles?.includes("Landlord") ? "/host/reservations" : "/trips");
+            }}
             title={chatUnreadCount > 0 ? `You have ${chatUnreadCount} unread message${chatUnreadCount === 1 ? '' : 's'}` : "Go to Messages"}
             className="flex items-center justify-center w-14 h-14 bg-[var(--dark-2)] border border-[var(--gold)]/40 text-[var(--cream)] shadow-2xl hover:border-[var(--gold)] hover:bg-[#1f1f1f] transition-all duration-300 rounded-full"
           >
@@ -459,8 +469,6 @@ function Home() {
           </div>
         </div>
       )}
-=======
->>>>>>> 5a2c8f71fbc0252699ff2a50200378cbb6d6a473
     </div>
   );
 }

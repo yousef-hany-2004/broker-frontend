@@ -22,7 +22,11 @@ export const getConversationUnreadCount = async (bookingId) => {
   const res = await axiosInstance.get(
     `/api/v1/Chat/conversations/${bookingId}/unread-count`
   );
-  return res.data;
+ const payload = res.data;
+
+  if (payload?.data?.count !== undefined) return { succeeded: true, data: payload.data.count };
+  if (payload?.data !== undefined) return { succeeded: true, data: payload.data };
+  return payload;
 };
 
 /**
@@ -67,6 +71,17 @@ export const markConversationAsRead = async (bookingId) => {
 export const deleteMessage = async (bookingId, messageId) => {
   const res = await axiosInstance.delete(
     `/api/v1/Chat/conversations/${bookingId}/messages/${messageId}`
+  );
+  return res.data;
+};
+
+/**
+ * Get presence status of the other party in a conversation
+ * Returns: { userId, isOnline, lastSeenAt }
+ */
+export const getConversationPresence = async (bookingId) => {
+  const res = await axiosInstance.get(
+    `/api/v1/Chat/conversations/${bookingId}/presence`
   );
   return res.data;
 };

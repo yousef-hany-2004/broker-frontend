@@ -6,12 +6,16 @@ const HUB_URL = "https://broker-system-api.runasp.net/hubs/notifications";
 let connection = null;
 let retryCount = 0;
 const handlers = new Set();
+const connectionStateHandlers = new Set();
+
+const notifyConnectionState = (state) => {
+  connectionStateHandlers.forEach((callback) => callback(state));
+};
 
 const registerHandlers = () => {
   handlers.forEach((callback) => {
     connection.on("ReceiveNotification", callback);
   });
-  registerTypingHandlers();
   registerMessageHandlers();
 };
 
@@ -33,15 +37,19 @@ export const startNotificationConnection = async () => {
 
   connection.onreconnecting(() => {
     console.log("Notifications: reconnecting...");
+    notifyConnectionState("reconnecting");
   });
 
   connection.onreconnected(() => {
     console.log("Notifications: reconnected.");
     retryCount = 0;
+    notifyConnectionState("connected");
     registerHandlers();
   });
 
   connection.onclose((error) => {
+    console.log("Notifications: disconnected");
+    notifyConnectionState("disconnected");
     if (error) {
       const isUnauthorized =
         error?.message?.includes("401") ||
@@ -63,6 +71,7 @@ export const startNotificationConnection = async () => {
     retryCount = 0;
     registerHandlers();
   } catch (err) {
+    notifyConnectionState("disconnected");
     const isUnauthorized =
       err?.message?.includes("401") || err?.message?.includes("Unauthorized");
     if (isUnauthorized) {
@@ -74,6 +83,22 @@ export const startNotificationConnection = async () => {
     const delay = Math.min(1000 * Math.pow(2, retryCount), 30000);
     retryCount++;
     setTimeout(() => startNotificationConnection(), delay);
+  }
+};
+
+export const onConnectionStateChange = (callback) => {
+  connectionStateHandlers.add(callback);
+  if (connection) {
+    const state = connection.state === signalR.HubConnectionState.Connected ? "connected" : "disconnected";
+    callback(state);
+  }
+};
+
+export const offConnectionStateChange = (callback) => {
+  if (callback) {
+    connectionStateHandlers.delete(callback);
+  } else {
+    connectionStateHandlers.clear();
   }
 };
 
@@ -94,43 +119,14 @@ export const offNotificationReceived = (callback) => {
   }
 };
 
-// Chat typing indicators
-const typingHandlers = new Set();
-
-export const onTypingIndicator = (callback) => {
-  typingHandlers.add(callback);
-  if (connection && connection.state === signalR.HubConnectionState.Connected) {
-    connection.on("ReceiveTypingIndicator", callback);
-  }
-};
-
-export const offTypingIndicator = (callback) => {
-  if (callback) {
-    typingHandlers.delete(callback);
-    connection?.off("ReceiveTypingIndicator", callback);
-  } else {
-    typingHandlers.clear();
-    connection?.off("ReceiveTypingIndicator");
-  }
-};
-
-export const sendTypingIndicator = async (bookingId, isTyping) => {
-  if (!connection || connection.state !== signalR.HubConnectionState.Connected) {
-    return;
-  }
-  try {
-    await connection.invoke("SendTypingIndicator", bookingId, isTyping);
-  } catch (err) {
-    console.error("Failed to send typing indicator:", err);
-  }
-};
 
 // Chat message listeners
 const messageHandlers = new Set();
 
 export const onNewMessage = (callback) => {
   messageHandlers.add(callback);
-  if (connection && connection.state === signalR.HubConnectionState.Connected) {
+  if (connection) {
+    connection.off("ReceiveMessage", callback);
     connection.on("ReceiveMessage", callback);
   }
 };
@@ -149,11 +145,8 @@ const registerMessageHandlers = () => {
   messageHandlers.forEach((callback) => {
     connection.on("ReceiveMessage", callback);
   });
-};
-
-const registerTypingHandlers = () => {
-  typingHandlers.forEach((callback) => {
-    connection.on("ReceiveTypingIndicator", callback);
+   typingHandlers.forEach((callback) => {
+    connection.on("UserTyping", callback);
   });
 };
 
@@ -164,4 +157,35 @@ export const stopNotificationConnection = async () => {
   connection = null;
   retryCount = 0;
   console.log("Notifications: disconnected");
+};
+
+
+// Typing indicator
+const typingHandlers = new Set();
+
+export const onTypingIndicator = (callback) => {
+  typingHandlers.add(callback);
+  if (connection && connection.state === signalR.HubConnectionState.Connected) {
+    connection.on("UserTyping", callback);
+  }
+};
+
+export const offTypingIndicator = (callback) => {
+  if (callback) {
+    typingHandlers.delete(callback);
+    connection?.off("UserTyping", callback);
+  } else {
+    typingHandlers.clear();
+    connection?.off("UserTyping");
+  }
+};
+
+export const sendTypingIndicator = async (bookingId) => {
+  if (connection && connection.state === signalR.HubConnectionState.Connected) {
+    try {
+      await connection.invoke("SendTypingIndicator", bookingId);
+    } catch {
+      // silently fail
+    }
+  }
 };
